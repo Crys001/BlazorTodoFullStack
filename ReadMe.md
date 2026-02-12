@@ -2,7 +2,6 @@
 
 A modern, secure, and responsive Todo management system built with **.NET 9**, **Blazor WebAssembly**, and **Entity Framework Core**. This project demonstrates a complete implementation of a decoupled architecture, focusing on security, database relationships, and professional UI/UX.
 
-
 ## ✨ Key Features
 
 * **Secure Authentication**: Full login and registration system using **JWT (JSON Web Tokens)** stored in LocalStorage.
@@ -46,8 +45,13 @@ A modern, secure, and responsive Todo management system built with **.NET 9**, *
     dotnet ef database update
     ```
 
-3.  **Run the application**:
-    Set both the `Server` and `Client` projects as startup projects in Visual Studio and press **F5**.
+3.  **Run the application (Visual Studio Multiple Startup)**:
+    Per far funzionare l'applicazione, è necessario avviare contemporaneamente sia il Server che il Client:
+    * Fai click con il tasto destro sulla **Soluzione** in Esplora Soluzioni.
+    * Seleziona **Proprietà**.
+    * Vai su **Progetto di avvio comune** > **Progetti di avvio multipli**.
+    * Imposta l'azione su **Avvia** per entrambi i progetti `Server` e `Client`.
+    * Clicca su **Applica** e premi **F5** per avviare il debug.
 
 ---
 
@@ -64,5 +68,3 @@ This project uses JWT for authentication. In a production environment, ensure th
 * Handling complex **One-to-Many relationships** in EF Core.
 * Debugged full-stack communication issues and managed **CORS/API routing**.
 * Organizing UI layouts with **Bootstrap Accordions** and dynamic grouping logic.
-
----
