@@ -31,7 +31,7 @@ A modern, secure, and responsive Todo management system built with **.NET 9**, *
 
 ### Prerequisites
 * [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
-* Visual Studio 2022 or VS Code
+* Visual Studio 2026 Insiders
 
 ### Setup
 1.  **Clone the repository**:
@@ -46,12 +46,14 @@ A modern, secure, and responsive Todo management system built with **.NET 9**, *
     ```
 
 3.  **Run the application (Visual Studio Multiple Startup)**:
-    Per far funzionare l'applicazione, è necessario avviare contemporaneamente sia il Server che il Client:
-    * Fai click con il tasto destro sulla **Soluzione** in Esplora Soluzioni.
-    * Seleziona **Proprietà**.
-    * Vai su **Progetto di avvio comune** > **Progetti di avvio multipli**.
-    * Imposta l'azione su **Avvia** per entrambi i progetti `Server` e `Client`.
-    * Clicca su **Applica** e premi **F5** per avviare il debug.
+To run the application, you need to start both the Server and the Client projects simultaneously:
+
+* Right-click on the **Solution** in the Solution Explorer.
+* Select **Properties**.
+* Go to **Common Properties** > **Startup Project**.
+* Select **Multiple startup projects**.
+* Set the Action to **Start** for both the `Server` and `Client` projects.
+* Click **Apply** and press **F5** to start debugging.
 
 ---
 
