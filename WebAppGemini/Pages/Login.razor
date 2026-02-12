@@ -1,0 +1,109 @@
+﻿@page "/login"
+@using WebApiGemini.Shared
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="text-center mb-4">Accedi ai tuoi ToDo</h2>
+
+                    @* EditForm: gestisce il form e la validazione *@
+                    <EditForm Model="@loginModel" OnValidSubmit="HandleLogin">
+                        <DataAnnotationsValidator />
+
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <InputText @bind-Value="loginModel.Email" class="form-control" placeholder="inserisci email" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <InputText type="password" @bind-Value="loginModel.Password" class="form-control" placeholder="inserisci password" />
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger mt-3 animate-fade-in">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i> @errorMessage
+                            </div>
+                        }
+
+                        <button type="submit" class="btn btn-primary" disabled="@isProcessing">Login</button>
+                        <div class="text-center mt-3">
+                            <p>Nuovo utente? <a href="/register" class="text-primary fw-bold">Registrati subito</a></p>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Creiamo una classe interna veloce per gestire i campi del form
+    private class LoginRequest
+    {
+        public string Email { get; set; } = "";
+        public string Password { get; set; } = "";
+    }
+    private bool isProcessing = false;
+    private LoginRequest loginModel = new();
+    private string errorMessage = "";
+
+    // Questo metodo sarà chiamato quando l'utente invia il form
+    private async Task HandleLogin()
+    {
+        isProcessing = true; // Disabilita il tasto
+        errorMessage = "";
+        try
+        {
+            // Qui scriveremo la chiamata all'API tra un istante...
+            var response = await Http.PostAsJsonAsync("/login", loginModel);
+            Console.WriteLine($"Tentativo di login per: {loginModel.Email}");
+
+            if (response.IsSuccessStatusCode)
+            {
+                // Leggiamo il token dalla risposta (assumendo che l'API restituisca { token: "..." })
+                var result = await response.Content.ReadFromJsonAsync<LoginResponse>();
+
+                if (result != null)
+                {
+                    await LocalStorage.SetItemAsync("authToken", result.Token);
+                    Navigation.NavigateTo("/");
+                }
+            }
+            else
+            {
+                errorMessage = "Email o Password errati.";
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine($"Errore durante il login: {ex.Message}");
+            errorMessage = "Si è verificato un errore. Riprova più tardi.";
+        }
+        finally
+        {
+            isProcessing = false; // Riabilita il tasto
+        }
+    }
+    public class LoginResponse
+    {
+        public string Token { get; set; } = "";
+    }
+    protected override async Task OnInitializedAsync()
+    {
+        // Verifichiamo se il token esiste già
+        var token = await LocalStorage.GetItemAsync<string>("authToken");
+
+        if (!string.IsNullOrEmpty(token))
+        {
+            // Se l'utente è già loggato, lo spediamo alla Home
+            Navigation.NavigateTo("/");
+        }
+    }
+}

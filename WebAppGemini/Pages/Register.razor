@@ -1,0 +1,126 @@
+﻿@page "/register"
+@using WebApiGemini.Shared
+@inject HttpClient Http
+@inject NavigationManager Navigation
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@using System.ComponentModel.DataAnnotations
+
+<div class="container mt-5">
+    <div class="row justify-content-center">
+        <div class="col-md-5">
+            <div class="card shadow-sm">
+                <div class="card-body p-4">
+                    <h2 class="text-center mb-4">Crea il tuo account</h2>
+
+                    <EditForm Model="@registerModel" OnValidSubmit="HandleRegister">
+                        <DataAnnotationsValidator />
+                        <ValidationSummary class="text-danger small" />
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Nome</label>
+                                <InputText @bind-Value="registerModel.Nome" class="form-control" placeholder="Nome" />
+                                <ValidationMessage For="@(() => registerModel.Nome)" class="text-danger small" />
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Cognome</label>
+                                <InputText @bind-Value="registerModel.Cognome" class="form-control" placeholder="Cognome" />
+                                <ValidationMessage For="@(() => registerModel.Cognome)" class="text-danger small" />
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <InputText @bind-Value="registerModel.Email" class="form-control" placeholder="inserisci email" />
+                            <ValidationMessage For="@(() => registerModel.Email)" class="text-danger small" />
+                        </div>
+
+                        <div class="mb-3">
+                            <label class="form-label">Password</label>
+                            <InputText type="password" @bind-Value="registerModel.Password" class="form-control" placeholder="minimo 8 caratteri" />
+                            <ValidationMessage For="@(() => registerModel.Password)" class="text-danger small" />
+                        </div>
+
+                        @if (!string.IsNullOrEmpty(errorMessage))
+                        {
+                            <div class="alert alert-danger mt-3 animate-fade-in">
+                                <i class="bi bi-exclamation-triangle-fill me-2"></i> @errorMessage
+                            </div>
+                        }
+
+                        <button type="submit" class="btn btn-success w-100" disabled="@isProcessing">
+                            @if (isProcessing)
+                            {
+                                <span class="spinner-border spinner-border-sm me-2"></span>
+                            }
+                            Registrati
+                        </button>
+
+                        <div class="text-center mt-3">
+                            <p>Hai già un account? <a href="/login" class="text-primary fw-bold">Accedi qui</a></p>
+                        </div>
+                    </EditForm>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@code {
+    // Aggiornata per includere Nome e Cognome
+    private class RegisterRequest
+    {
+        [Required(ErrorMessage = "Il nome è obbligatorio")]
+        public string Nome { get; set; } = "";
+
+        [Required(ErrorMessage = "Il cognome è obbligatorio")]
+        public string Cognome { get; set; } = "";
+
+        [Required(ErrorMessage = "L'email è obbligatoria")]
+        [EmailAddress(ErrorMessage = "Email non valida")]
+        public string Email { get; set; } = "";
+
+        [Required(ErrorMessage = "La password è obbligatoria")]
+        [MinLength(8, ErrorMessage = "Minimo 8 caratteri")]
+        public string Password { get; set; } = "";
+    }
+
+    private bool isProcessing = false;
+    private RegisterRequest registerModel = new();
+    private string errorMessage = "";
+
+    private async Task HandleRegister()
+    {
+        isProcessing = true;
+        errorMessage = "";
+
+        try
+        {
+            var response = await Http.PostAsJsonAsync("/register", registerModel);
+
+            if (response.IsSuccessStatusCode)
+            {
+                Navigation.NavigateTo("/login");
+            }
+            else
+            {
+                var errorContent = await response.Content.ReadAsStringAsync();
+                errorMessage = !string.IsNullOrEmpty(errorContent) ? errorContent : "Errore durante la registrazione.";
+            }
+        }
+        catch (Exception ex)
+        {
+            errorMessage = "Errore di rete. Riprova più tardi.";
+        }
+        finally
+        {
+            isProcessing = false;
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var token = await LocalStorage.GetItemAsync<string>("authToken");
+        if (!string.IsNullOrEmpty(token)) Navigation.NavigateTo("/");
+    }
+}

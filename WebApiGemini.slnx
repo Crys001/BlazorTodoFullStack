@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="WebApiGemini.Shared/WebApiGemini.Shared.csproj" />
+  <Project Path="WebApiGemini/WebApiGemini.csproj" />
+  <Project Path="WebAppGemini/WebAppGemini.csproj" />
+</Solution>

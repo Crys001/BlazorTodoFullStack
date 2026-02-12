@@ -1,0 +1,23 @@
+# Cartelle di compilazione e output
+[Bb]in/
+[Oo]bj/
+
+# Cartelle specifiche di Visual Studio
+.vs/
+*.user
+*.userosscache
+*.sln.docstates
+
+# File utente e temporanei
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+# Cartelle del client (Blazor/JS)
+node_modules/
+.env
+
+# Database locali (se presenti nella cartella di progetto)
+*.db
+*.sqlite

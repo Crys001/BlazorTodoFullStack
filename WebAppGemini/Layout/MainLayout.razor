@@ -1,0 +1,29 @@
+﻿@inherits LayoutComponentBase
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@inject NavigationManager Navigation
+
+<div class="page">
+    <main>
+        <article class="content px-4">
+            @Body
+        </article>
+    </main>
+</div>
+@code {
+    protected override async Task OnInitializedAsync()
+    {
+        // Controlliamo se esiste il token
+        var token = await LocalStorage.GetItemAsync<string>("authToken");
+
+        // Se non c'è il token e non siamo già sulla pagina di login, vai al login
+        if (string.IsNullOrEmpty(token) && !Navigation.Uri.Contains("/login"))
+        {
+            Navigation.NavigateTo("/login");
+        }
+        // Se c'è il token e siamo sul login, vai alla home
+        else if (!string.IsNullOrEmpty(token) && Navigation.Uri.Contains("/login"))
+        {
+            Navigation.NavigateTo("/");
+        }
+    }
+}

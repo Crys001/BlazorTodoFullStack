@@ -1,0 +1,248 @@
+﻿@page "/"
+@inject Blazored.LocalStorage.ILocalStorageService LocalStorage
+@inject NavigationManager Navigation
+@inject HttpClient Http
+@using WebApiGemini.Shared
+
+<PageTitle>I miei Todo</PageTitle>
+
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h3>Le mie attività</h3>
+        <button class="btn btn-outline-secondary btn-sm" @onclick="HandleLogout">
+            <i class="bi bi-box-arrow-right"></i> Logout
+        </button>
+    </div>
+
+    <div class="card shadow-sm mb-4 border-0">
+        <div class="card-body">
+            <h6 class="card-subtitle mb-2 text-muted small text-uppercase">Nuova attività</h6>
+            <div class="input-group">
+                <input type="text" class="form-control" placeholder="Cosa devi fare?"
+                       @bind="nuovoTitolo" @onkeyup="HandleKeyUp" />
+
+                <select class="form-select" @bind="idCategoriaSelezionata" style="max-width: 180px;">
+                    <option value="">Nessuna Categoria</option>
+                    @if (categorie != null)
+                    {
+                        @foreach (var cat in categorie)
+                        {
+                            <option value="@cat.Id">@cat.Name</option>
+                        }
+                    }
+                </select>
+
+                <button class="btn btn-primary px-4" @onclick="AggiungiTodo" disabled="@isAdding">
+                    @if (isAdding)
+                    {
+                        <span class="spinner-border spinner-border-sm"></span>
+                    }
+                    else
+                    {
+                        <span>Aggiungi</span>
+                    }
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mb-4 border-0 shadow-sm bg-light">
+        <div class="card-body py-2">
+            <label class="small fw-bold text-muted mb-2"><i class="bi bi-tags me-1"></i> Gestisci Categorie</label>
+
+            <div class="d-flex flex-wrap gap-2 mb-3">
+                @if (categorie != null)
+                {
+                    @foreach (var cat in categorie)
+                    {
+                        <span class="badge bg-white text-dark border d-flex align-items-center gap-2 shadow-sm">
+                            @cat.Name
+                            <i class="bi bi-x-circle text-danger" style="cursor:pointer"
+                               @onclick="() => EliminaCategoria(cat.Id)"></i>
+                        </span>
+                    }
+                }
+            </div>
+
+            <div class="input-group input-group-sm">
+                <input type="text" class="form-control" placeholder="Nome nuova categoria..." @bind="nuovaCategoriaNome" />
+                <button class="btn btn-outline-success" @onclick="CreaCategoria">Crea</button>
+            </div>
+        </div>
+    </div>
+
+    @if (todos == null)
+    {
+        <div class="text-center my-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Caricamento in corso...</p>
+        </div>
+    }
+    else if (!todos.Any())
+    {
+        <div class="alert alert-info border-0 shadow-sm">
+            <i class="bi bi-info-circle me-2"></i> Non ci sono attività. Inizia a scriverne una!
+        </div>
+    }
+    else
+    {
+        @* Raggruppiamo i Todo per NomeCategoria. Se è nullo, usiamo "Senza Categoria" *@
+        @foreach (var gruppo in todos.GroupBy(t => t.NomeCategoria ?? "Senza Categoria").OrderBy(g => g.Key == "Senza Categoria").ThenBy(g => g.Key))
+        {
+            <div class="category-group mb-4">
+                <h5 class="text-primary d-flex align-items-center mb-3">
+                    <i class="bi bi-folder2-open me-2"></i>
+                    @gruppo.Key
+                    <span class="badge rounded-pill bg-secondary ms-2" style="font-size: 0.5em;">@gruppo.Count()</span>
+                </h5>
+
+                <div class="list-group shadow-sm mb-2">
+                    @foreach (var todo in gruppo.OrderBy(t => t.IsCompletato))
+                    {
+                        <div class="list-group-item d-flex align-items-center justify-content-between py-3">
+                            <div class="d-flex align-items-center">
+                                <input type="checkbox" class="form-check-input me-3"
+                                       checked="@todo.IsCompletato"
+                                       @onchange="@(async (e) => await ToggleCompletato(todo))" />
+
+                                <div>
+                                    <span style="text-decoration: @(todo.IsCompletato ? "line-through" : "none")"
+                                          class="fw-bold @(todo.IsCompletato ? "text-muted" : "")">
+                                        @todo.Titolo
+                                    </span>
+                                </div>
+                            </div>
+
+                            <button class="btn btn-outline-danger btn-sm border-0" @onclick="@(() => EliminaTodo(todo.Id))">
+                                <i class="bi bi-trash3-fill"></i>
+                            </button>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private List<TodoItemDTO>? todos;
+    private List<CategoryDTO>? categorie;
+
+    private string nuovoTitolo = "";
+    private string nuovaCategoriaNome = "";
+    private int? idCategoriaSelezionata;
+    private bool isAdding = false;
+
+    protected override async Task OnInitializedAsync()
+    {
+        // Carichiamo tutto in parallelo per velocità
+        await Task.WhenAll(CaricaTodo(), CaricaCategorie());
+    }
+
+    private async Task CaricaTodo()
+    {
+        try
+        {
+            todos = await Http.GetFromJsonAsync<List<TodoItemDTO>>("todoitems");
+        }
+        catch (HttpRequestException ex)
+        {
+            if (ex.StatusCode == System.Net.HttpStatusCode.Unauthorized) await HandleLogout();
+        }
+    }
+
+    private async Task CaricaCategorie()
+    {
+        try
+        {
+            categorie = await Http.GetFromJsonAsync<List<CategoryDTO>>("categories");
+        }
+        catch (Exception ex) { Console.WriteLine($"Errore categorie: {ex.Message}"); }
+    }
+
+    private async Task AggiungiTodo()
+    {
+        if (string.IsNullOrWhiteSpace(nuovoTitolo)) return;
+        isAdding = true;
+
+        var nuovo = new TodoItemDTO
+        {
+            Titolo = nuovoTitolo,
+            IsCompletato = false,
+            IdCategoria = idCategoriaSelezionata
+        };
+
+        var response = await Http.PostAsJsonAsync("todoitems", nuovo);
+        if (response.IsSuccessStatusCode)
+        {
+            nuovoTitolo = "";
+            idCategoriaSelezionata = null;
+            await CaricaTodo();
+        }
+        isAdding = false;
+    }
+
+    private async Task CreaCategoria()
+    {
+        if (string.IsNullOrWhiteSpace(nuovaCategoriaNome)) return;
+
+        var nuovaCat = new CategoryDTO { Name = nuovaCategoriaNome };
+        var response = await Http.PostAsJsonAsync("categories", nuovaCat);
+
+        if (response.IsSuccessStatusCode)
+        {
+            nuovaCategoriaNome = "";
+            await CaricaCategorie();
+        }
+    }
+    private async Task EliminaCategoria(int id)
+    {
+        // Chiediamo conferma (opzionale ma consigliato)
+        // var confermato = await JS.InvokeAsync<bool>("confirm", "Sei sicuro? I Todo in questa categoria non verranno cancellati, ma rimarranno senza categoria.");
+
+        var response = await Http.DeleteAsync($"categories/{id}");
+
+        if (response.IsSuccessStatusCode)
+        {
+            // Ricarichiamo sia le categorie che i todo (perché i nomi delle categorie nella lista cambieranno)
+            await Task.WhenAll(CaricaCategorie(), CaricaTodo());
+        }
+        else
+        {
+            Console.WriteLine("Errore durante l'eliminazione della categoria.");
+        }
+    }
+
+    private async Task ToggleCompletato(TodoItemDTO todo)
+    {
+        todo.IsCompletato = !todo.IsCompletato;
+        await Http.PutAsJsonAsync($"todoitems/{todo.Id}", todo);
+    }
+
+    private async Task EliminaTodo(int id)
+    {
+        // Ottimismo: lo tolgo subito dalla lista visiva
+        var todoDaRimuovere = todos?.FirstOrDefault(t => t.Id == id);
+        if (todoDaRimuovere != null) todos?.Remove(todoDaRimuovere);
+
+        // Poi avviso il server
+        var response = await Http.DeleteAsync($"todoitems/{id}");
+
+        if (!response.IsSuccessStatusCode)
+        {
+            // Se il server fallisce, ricarico la lista originale per sicurezza
+            await CaricaTodo();
+        }
+    }
+
+    private async Task HandleKeyUp(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") await AggiungiTodo();
+    }
+
+    private async Task HandleLogout()
+    {
+        await LocalStorage.RemoveItemAsync("authToken");
+        Navigation.NavigateTo("/login");
+    }
+}
