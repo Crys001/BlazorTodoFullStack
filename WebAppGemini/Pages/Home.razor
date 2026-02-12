@@ -197,9 +197,6 @@
     }
     private async Task EliminaCategoria(int id)
     {
-        // Chiediamo conferma (opzionale ma consigliato)
-        // var confermato = await JS.InvokeAsync<bool>("confirm", "Sei sicuro? I Todo in questa categoria non verranno cancellati, ma rimarranno senza categoria.");
-
         var response = await Http.DeleteAsync($"categories/{id}");
 
         if (response.IsSuccessStatusCode)
