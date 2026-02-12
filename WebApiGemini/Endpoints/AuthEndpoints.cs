@@ -42,23 +42,25 @@ public static class AuthEndpoints
         });
 
         // --- 2. LOGIN ---
-        app.MapPost("/login", async (LoginDTO loginData, AppDbContext db) =>
+        app.MapPost("/login", async (LoginDTO loginData, AppDbContext db, IConfiguration configuration) =>
         {
             var user = await db.Users.FirstOrDefaultAsync(u => u.Email == loginData.Email);
 
-            // Verifica hash: BCrypt.Verify confronta la password in chiaro con quella frullata nel DB
             if (user != null && BCrypt.Net.BCrypt.Verify(loginData.Password, user.Password))
             {
-                var key = Encoding.ASCII.GetBytes("QuestaChiaveDeveEssereLunghissimaESegreta123!");
+                var jwtSettings = configuration.GetSection("Jwt");
+                var key = Encoding.ASCII.GetBytes(jwtSettings["Key"] ?? "ChiaveDiBackupMoltoLungaPerSicurezza123!");
 
                 var tokenDescriptor = new SecurityTokenDescriptor
                 {
                     Subject = new ClaimsIdentity(new[]
                     {
-                        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                        new Claim(ClaimTypes.Email, user.Email!),
-                        new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin" : "User")
-                    }),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
+                new Claim(ClaimTypes.Email, user.Email!),
+                new Claim(ClaimTypes.Role, user.IsAdmin ? "Admin" : "User")
+            }),
+                    Issuer = jwtSettings["Issuer"],
+                    Audience = jwtSettings["Audience"],
                     Expires = DateTime.UtcNow.AddHours(1),
                     SigningCredentials = new SigningCredentials(
                         new SymmetricSecurityKey(key),
