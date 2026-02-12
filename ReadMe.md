@@ -31,7 +31,7 @@ A modern, secure, and responsive Todo management system built with **.NET 9**, *
 
 ### Prerequisites
 * [.NET 9 SDK](https://dotnet.microsoft.com/download/dotnet/9.0)
-* Visual Studio 2026 Insiders
+* Visual Studio 2022 or VS Code
 
 ### Setup
 1.  **Clone the repository**:
@@ -46,21 +46,27 @@ A modern, secure, and responsive Todo management system built with **.NET 9**, *
     ```
 
 3.  **Run the application (Visual Studio Multiple Startup)**:
-To run the application, you need to start both the Server and the Client projects simultaneously:
-
-* Right-click on the **Solution** in the Solution Explorer.
-* Select **Properties**.
-* Go to **Common Properties** > **Startup Project**.
-* Select **Multiple startup projects**.
-* Set the Action to **Start** for both the `Server` and `Client` projects.
-* Click **Apply** and press **F5** to start debugging.
+    To run the application, you need to start both the Server and the Client projects simultaneously:
+    
+    * Right-click on the **Solution** in the Solution Explorer.
+    * Select **Properties**.
+    * Go to **Common Properties** > **Startup Project**.
+    * Select **Multiple startup projects**.
+    * Set the Action to **Start** for both the `Server` and `Client` projects.
+    * Click **Apply** and press **F5** to start debugging.
 
 ---
 
-## 🔒 Security Note
-This project uses JWT for authentication. In a production environment, ensure that:
-* The `Jwt:Key` in `appsettings.json` is moved to an environment variable or Azure Key Vault.
-* Sensitive database connection strings are not hardcoded.
+## 🔒 Security & Configuration Note
+
+
+
+For portfolio and local development purposes, this project includes a default `appsettings.json` with a development JWT key and local database connection strings to ensure the application is "ready-to-run". 
+
+However, in a **production environment**, I am aware of the following best practices:
+* **Sensitive Data**: The `Jwt:Key` and Connection Strings should be moved to **Environment Variables**, **User Secrets**, or **Azure Key Vault**.
+* **Hardcoded Secrets**: No sensitive keys should be tracked in the Git history.
+* **Token Validation**: The current implementation validates Issuer and Audience via centralized configuration for consistency.
 
 ---
 
